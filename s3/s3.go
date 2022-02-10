@@ -434,7 +434,11 @@ func (b *Bucket) SignedURL(path string, expires time.Duration) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.Header.Add("date", time.Now().UTC().Format(aws.ISO8601BasicFormat))
+
+	// Truncate the current time to half the expiry duration to ensure the same URL
+	// is used for requests within the expiry timeframe. As an example, a request with an value for
+	// expires of 30 minutes will adjust the time of 7:13 am to be 7:00 am
+	req.Header.Add("date", time.Now().UTC().Truncate(expires/2).Format(aws.ISO8601BasicFormat))
 
 	if err := aws.SignV4URL(req, b.Auth, b.Region.Name, "s3", expires); err != nil {
 		return "", err
